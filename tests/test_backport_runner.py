@@ -119,9 +119,7 @@ class TestDatabaseBackend:
         assert execution.status == CommandExecution.Status.FAILED
         assert "intentional failure" in execution.output_text("stderr")
 
-    def test_sigterm_mid_run_fails_the_run_and_stops_the_worker(
-        self, runner, keep_signal_handlers
-    ):
+    def test_sigterm_mid_run_fails_the_run_and_stops_the_worker(self, runner, keep_signal_handlers):
         stopped, _ = _run(runner, "sigterm_command")
         waiting, _ = _run(runner, "simple_command")
         _db_worker()
