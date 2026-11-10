@@ -11,6 +11,15 @@
 
 ---
 
+> **Canusia fork.** This is `Canusia/package-admin-runner`, a fork of
+> [burgdev/django-admin-runner](https://github.com/burgdev/django-admin-runner).
+> It adds Django 5.2 support through a `django-tasks` backport runner
+> (`ADMIN_RUNNER_BACKEND = "django-tasks"`, see
+> [Runners](docs/guides/runners.md)). Releases are tagged `vX.Y.Z.postN` on top
+> of the upstream version and installed from git, not PyPI.
+
+---
+
 ## Features
 
 - **`@register_command` decorator** — register any management command with metadata

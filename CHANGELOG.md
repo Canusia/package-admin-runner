@@ -7,6 +7,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0.post1] - 2026-11-10 (Canusia fork)
+
+Upstream 0.3.0 plus upstream `main` 9efeb32 (heartbeat-based worker liveness,
+migration 0012), and:
+
+#### 🚀 Features
+- Django 5.2 support: `django>=5.2`, and a `django-tasks` runner
+  (`ADMIN_RUNNER_BACKEND = "django-tasks"`, `ADMIN_RUNNER_QUEUE`) for the
+  `django-tasks` backport, with an optional `[django-tasks]` extra. The
+  `"django"` default falls back to it when `django.tasks` is missing.
+
+#### 🐛 Fixes
+- A SIGTERM during a run on `db_worker` is passed on to the worker after the
+  run is saved, so the worker shuts down instead of taking the next task.
+
+#### 🌀 Others
+- LICENSE file (MIT, as declared in the package metadata).
+- Tests run on Django 5.2 and 6.0.
+- Upstream's tag, PyPI publish, release and docs workflows only run on the
+  upstream repository.
+- `.postN` versions are set by hand (`bump2version --new-version 0.3.0.post2`);
+  the bumpversion patterns don't know them.
+
 ## [0.3.0] - 2026-10-05
 
 #### 🏗️ Breaking changes
