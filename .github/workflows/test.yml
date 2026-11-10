@@ -6,16 +6,31 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version: ["3.12", "3.13"]
+        django: ["5.2", "6.0"]
+        include:
+          # 5.2: the backport with its database backend, as Canusia hosts run it
+          - django: "5.2"
+            extra: "django-tasks==0.6.1"
+          # 6.0: built-in django.tasks only
+          - django: "6.0"
+            extra: ""
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
 
       - run: uv sync --all-groups --all-extras
 
-      - run: uv run pytest --cov=django_admin_runner --cov-report=xml
+      # Django 5.2 has no django.tasks; the django-tasks extra covers it.
+      - run: uv pip install "django~=${{ matrix.django }}.0" ${{ matrix.extra }}
+
+      - if: matrix.django == '6.0'
+        run: uv pip uninstall django-tasks
+
+      - run: uv run --no-sync pytest --cov=django_admin_runner --cov-report=xml

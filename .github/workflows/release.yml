@@ -8,6 +8,8 @@ on:
 
 jobs:
   release:
+    # upstream only: the Canusia fork tags and releases by hand
+    if: github.repository == 'burgdev/django-admin-runner'
     runs-on: ubuntu-latest
     permissions:
       contents: write

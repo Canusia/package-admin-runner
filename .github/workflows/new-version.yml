@@ -8,7 +8,8 @@ on:
 
 jobs:
   tag:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # upstream only: the Canusia fork tags and releases by hand
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.repository == 'burgdev/django-admin-runner' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
