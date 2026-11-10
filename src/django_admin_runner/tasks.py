@@ -83,6 +83,13 @@ class WorkerStoppedError(Exception):
     """Raised inside a command when the worker receives SIGTERM."""
 
 
+#: Set when the SIGTERM handler fired during the last run. The handler
+#: replaces the worker's own one while a command runs, so a runner whose
+#: worker must still shut down afterwards (django-tasks ``db_worker``) checks
+#: this and passes the signal on once the execution is saved.
+SIGTERM_RECEIVED = threading.Event()
+
+
 class CommandCancelledError(Exception):
     """Raised inside a command when a stop was requested from the admin.
 
@@ -270,10 +277,13 @@ def _install_sigterm_handler():
     import signal
 
     def _handler(signum, frame):  # pragma: no cover - exercised via raise
+        SIGTERM_RECEIVED.set()
         raise WorkerStoppedError(
             "Worker received SIGTERM — the task cluster was stopped while this command was running."
         )
 
+    _handler.is_admin_runner_handler = True
+    SIGTERM_RECEIVED.clear()
     try:
         previous = signal.getsignal(signal.SIGTERM)
         signal.signal(signal.SIGTERM, _handler)
@@ -1026,6 +1036,9 @@ def execute_command(command_name: str, kwargs: dict, execution_pk: int) -> None:
         if command_exc is not None:
             raise command_exc
     finally:
+        # Again here: a SIGTERM during the output flush above can skip the
+        # first restore and leave the raising handler in the worker.
+        _restore_sigterm_handler(_sigterm_handler)
         heartbeat_stop.set()
         heartbeat_thread.join(timeout=2)
         _clear_execution_context()

@@ -24,6 +24,46 @@ TASKS = {
 # ADMIN_RUNNER_BACKEND not required — "django" is the default
 ```
 
+### `"django-tasks"` — DjangoTasksBackportRunner (Django 5.2)
+
+*Added in the Canusia fork.* For Django below 6.0, which has no `django.tasks`,
+using the [`django-tasks`](https://pypi.org/project/django-tasks/) backport
+package. The `"django"` default falls back to this runner when `django.tasks`
+can't be imported.
+
+```bash
+pip install "django-admin-runner[django-tasks]"
+```
+
+```python
+INSTALLED_APPS += ["django_tasks", "django_tasks.backends.database"]
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks.backends.database.DatabaseBackend",
+        "QUEUES": ["default", "admin_runner"],
+    }
+}
+ADMIN_RUNNER_BACKEND = "django-tasks"
+ADMIN_RUNNER_QUEUE = "admin_runner"  # optional; must be in QUEUES
+```
+
+Run a worker for the queue with
+`python manage.py db_worker --queue-name admin_runner`.
+
+- The task is `django_admin_runner.backport_tasks.execute_command_task`. The
+  database worker loads tasks by import path, so it is defined at module level.
+- A queue that isn't in `QUEUES` fails the run with "Failed to enqueue task".
+- Use django-tasks below 0.12: 0.12 moved the database backend into a
+  separate package.
+- Importing the task checks it against the default backend, so when `QUEUES`
+  is set it must include `"default"`.
+- `ADMIN_RUNNER_QUEUE` applies only to this runner. The Django 6.0 `"django"`
+  runner always uses the default queue.
+- Stop works through the stop flag; there is no force stop.
+- If the worker gets SIGTERM during a run, the run is marked failed and the
+  signal is then passed to `db_worker`, so the worker shuts down instead of
+  taking the next task.
+
 ### `"sync"` — SyncCommandRunner
 
 Runs commands inline with no task backend at all. Simple and reliable for

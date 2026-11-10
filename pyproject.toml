@@ -1,17 +1,18 @@
 [project]
 name = "django-admin-runner"
-version = "0.3.0"
+version = "0.3.0.post1"
 description = "Run Django management commands from the admin with auto-generated forms and pluggable task runners"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"
-dependencies = ["django>=6.0"]
+dependencies = ["django>=5.2"]
 
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
   "Framework :: Django",
+  "Framework :: Django :: 5.2",
   "Framework :: Django :: 6.0",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
@@ -20,6 +21,8 @@ classifiers = [
 
 [project.optional-dependencies]
 celery = ["celery>=5.3"]
+# 0.12 moved the database backend out of django-tasks
+django-tasks = ["django-tasks>=0.6,<0.12"]
 django-q2 = ["django-q2>=1.5"]
 unfold = ["django-unfold>=0.40"]
 rich = ["rich>=13.0"]

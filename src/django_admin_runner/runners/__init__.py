@@ -139,11 +139,19 @@ class BaseCommandRunner:
         return None
 
 
+def _has_django_tasks_builtin() -> bool:
+    import importlib.util
+
+    return importlib.util.find_spec("django.tasks") is not None
+
+
 def get_runner() -> BaseCommandRunner:
     """Instantiate and return the runner configured by ``ADMIN_RUNNER_BACKEND``.
 
     Possible values:
     - ``"django"`` (default) — :class:`~django_admin_runner.runners.django_tasks.DjangoTaskRunner`
+      (falls back to ``"django-tasks"`` when ``django.tasks`` is missing, Django < 6.0)
+    - ``"django-tasks"`` — ``DjangoTasksBackportRunner``, for the ``django-tasks`` backport
     - ``"sync"`` — :class:`~django_admin_runner.runners.sync.SyncCommandRunner`
     - ``"celery"`` — :class:`~django_admin_runner.runners.celery.CeleryCommandRunner`
     - ``"django-q2"`` — :class:`~django_admin_runner.runners.django_q2.DjangoQ2CommandRunner`
@@ -165,10 +173,17 @@ def get_runner() -> BaseCommandRunner:
         from .django_q2 import DjangoQ2CommandRunner
 
         return DjangoQ2CommandRunner()
+    if backend == "django" and not _has_django_tasks_builtin():
+        # Django < 6.0 has no django.tasks: use the django-tasks backport.
+        backend = "django-tasks"
     if backend == "django":
         from .django_tasks import DjangoTaskRunner
 
         return DjangoTaskRunner()
+    if backend == "django-tasks":
+        from .django_tasks_backport import DjangoTasksBackportRunner
+
+        return DjangoTasksBackportRunner()
 
     # Dotted import path to a custom runner class
     import importlib

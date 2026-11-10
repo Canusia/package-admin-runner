@@ -13,6 +13,7 @@ from django_admin_runner.models import CommandExecution
 from django_admin_runner.runners import get_runner
 from django_admin_runner.runners.django_tasks import _is_immediate_backend
 from django_admin_runner.runners.sync import SyncCommandRunner
+from tests.settings import HAS_DJANGO_TASKS_BUILTIN
 
 User = get_user_model()
 
@@ -88,6 +89,7 @@ class TestSyncCommandRunner:
 
 
 @pytest.mark.django_db
+@pytest.mark.skipif(not HAS_DJANGO_TASKS_BUILTIN, reason="django.tasks needs Django 6.0")
 class TestDjangoTaskRunner:
     def test_success_status(self, user, db):
         from django_admin_runner.runners.django_tasks import DjangoTaskRunner
@@ -162,10 +164,14 @@ def test_is_immediate_backend_no_tasks_setting():
 # ---------------------------------------------------------------------------
 
 
+#: What "django" resolves to: django.tasks on 6.0+, the backport below it.
+DEFAULT_BACKEND = "django" if HAS_DJANGO_TASKS_BUILTIN else "django-tasks"
+
+
 def test_get_runner_default_returns_django_task_runner():
     with override_settings(ADMIN_RUNNER_BACKEND="django"):
         runner = get_runner()
-        assert runner.backend == "django"
+        assert runner.backend == DEFAULT_BACKEND
 
 
 def test_get_runner_sync():
@@ -183,7 +189,7 @@ def test_get_runner_no_setting_defaults_to_django():
         delattr(django_settings, "ADMIN_RUNNER_BACKEND")
     try:
         runner = get_runner()
-        assert runner.backend == "django"
+        assert runner.backend == DEFAULT_BACKEND
     finally:
         if original is not None:
             django_settings.ADMIN_RUNNER_BACKEND = original

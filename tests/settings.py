@@ -14,6 +14,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": ":memory:",
+        # django-tasks' db_worker refuses SQLite transactions that aren't EXCLUSIVE
+        "OPTIONS": {"transaction_mode": "EXCLUSIVE"},
     }
 }
 
@@ -44,9 +46,31 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 ROOT_URLCONF = "tests.urls"
 
-# ImmediateBackend — runs tasks inline, no worker needed
+# ImmediateBackend — runs tasks inline, no worker needed. Django < 6.0 has no
+# django.tasks, so the tests use the django-tasks backport there.
+import importlib.util  # noqa: E402
+
+HAS_DJANGO_TASKS_BUILTIN = importlib.util.find_spec("django.tasks") is not None
+HAS_DJANGO_TASKS_BACKPORT = importlib.util.find_spec("django_tasks") is not None
+# django-tasks 0.12 moved its database backend out into its own package
+HAS_DJANGO_TASKS_DB = (
+    HAS_DJANGO_TASKS_BACKPORT
+    and importlib.util.find_spec("django_tasks.backends.database") is not None
+)
+
+_TASKS_PKG = "django.tasks" if HAS_DJANGO_TASKS_BUILTIN else "django_tasks"
+
 TASKS = {
     "default": {
-        "BACKEND": "django.tasks.backends.immediate.ImmediateBackend",
+        "BACKEND": f"{_TASKS_PKG}.backends.immediate.ImmediateBackend",
     }
 }
+if not HAS_DJANGO_TASKS_BUILTIN:
+    # The backport waits for the transaction to commit, which a test
+    # transaction never does (Django 6.0 dropped the option).
+    TASKS["default"]["ENQUEUE_ON_COMMIT"] = False
+
+if HAS_DJANGO_TASKS_BACKPORT:
+    INSTALLED_APPS += ["django_tasks"]
+if HAS_DJANGO_TASKS_DB:
+    INSTALLED_APPS += ["django_tasks.backends.database"]
